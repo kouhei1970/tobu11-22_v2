@@ -1,5 +1,8 @@
 #ifndef EKF_SENSER_HPP
 #define EKF_SENSER_HPP
+
+#include <random>
+#include <unistd.h>
 #include <Eigen/Dense>
 #include <stdio.h>
 #include<cmath>
@@ -19,8 +22,8 @@
 #define PIN_SCK  10
 #define PIN_MOSI 11
 #define GRAV (9.80665)
-#define MN (-315.0)
-#define MD (440.0)
+#define MN (0.75)
+#define MD (0.75)
 #define PI (3.14159)
 
 using Eigen::MatrixXd;
@@ -75,6 +78,5 @@ uint8_t ekf( Matrix<float, 7, 1> &xe,
              Matrix<float, 6, 6> R, 
              Matrix<float, 7, 3> G,
              Matrix<float, 3, 1> beta,
-
              float dt);
 #endif

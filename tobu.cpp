@@ -5,29 +5,19 @@
 //マルチコア設定
 semaphore_t sem;
 
-
 float ax,ay,az,wp,wq,wr,mx,my,mz,wqa=0.0,wpa=0.0,wra=0.0,Wqa,Wpa,Wra; 
-
-
-
-
-
+float Mn,Md;
 Matrix<float, 7 ,1> xp = MatrixXf::Zero(7,1);
 Matrix<float, 7 ,1> xe = MatrixXf::Zero(7,1);
 Matrix<float, 7 ,1> x_sim = MatrixXf::Zero(7,1);
 Matrix<float, 7 ,7> P = MatrixXf::Identity(7,7);
 Matrix<float, 6 ,1> z = MatrixXf::Zero(6,1);
-Matrix<float, 6 ,1> z_sim = MatrixXf::Zero(6,1);
-// Matrix<float, 6 ,1> z_noise = MatrixXf::Zero(6,1);
 Matrix<float, 3, 1> omega_m = MatrixXf::Zero(3, 1);
-//  Matrix<float, 3, 1> omega_sim;
-//  Matrix<float, 3, 1> domega;
-//  Matrix<float, 3, 1> domega_sim;
 Matrix<float, 3, 3> Q = MatrixXf::Identity(3, 3)*1;
 Matrix<float, 6, 6> R = MatrixXf::Identity(6, 6)*1;
 Matrix<float, 7 ,3> G;
 Matrix<float, 3 ,1> beta;
-volatile float l=0.0;
+volatile float kalman_time=0.0;
 
 float dt=0.01;
 short y=1;
@@ -42,18 +32,13 @@ float se,sa,sr;
 float Ti=10000;
 float Td=0.0;
 float h=0.01;
-float dmx,dmy,dmz,dxx,dxy,dxz;
-//float ddxx, ddxy,ddxz;
-//float dddxx,dddxy,dddxz;
-//float ddddxx,ddddxy,ddddxz;
+volatile float dmx,dmy,dmz,dxx,dxy,dxz;
 //float kpe=0.053051647,kpa=0.053051647,kpr=0.159154943;
 float kpe=0.50,kpa=0.50,kpr=0.50;
-//float w;
 //float p11=-0.60526553,p12=0.79021444,p13=-0.09599364,p21=0.78892428,p22=0.61155945,p23=0.05994594,p31=-0.10607597,p32=0.0394485,p33=0.99357521;
 
 void kalman(void){
  
-  float time=0.0;
   while(1)
   {
     sem_acquire_blocking(&sem);
@@ -64,10 +49,7 @@ void kalman(void){
     z       <<ax,ay,az,mx,my,mz;//ここに入れる
     //--Begin Extended Kalman Filter--
     ekf(xp, xe, P, z, omega_m, Q, R, G*dt, beta, dt);
-    l=l+0.01;
-    //xe(0,0)=9.9;
-    //printf("%f\n",xe(0,0));
-    //time=time+0.01;
+    kalman_time = kalman_time + 0.01;
 
   }
 }
@@ -110,29 +92,6 @@ void MAINLOOP(void)
   my/=mag_norm;
   mz/=mag_norm;
 
-  //校正作業
-  //dxx=p11*dmx+p21*dmy+p31*dmz;
-  //dxy=p12*dmx+p22*dmy+p32*dmz;
-  //dxz=p13*dmx+p23*dmy+p33*dmz;
-
-  //ddxx=dxx-22.760831749415342;
-  //ddxy=dxy-19.734355196006327;
-  //ddxz=dxz-141.33565570453044;
-
-
-  //w=-1.087745370038146;
-
-  //dddxx=ddxx*0.0020572671658147883;
-  //dddxy=ddxy*0.0021354074993493823;
-  //dddxz=ddxz*0.0019594870993397107;
-
-  //mx=p11*dddxx+p22*dddxy+p13*dddxz;
-  //my=p21*dddxx+p22*dddxy+p23*dddxz;
-  //mz=p31*dddxx+p32*dddxy+p33*dddxz;
-
-
-
-
 
   if(y<=3){
     y=y+1;
@@ -143,19 +102,6 @@ void MAINLOOP(void)
   }
   
 
-#if 0
-
-    if(counter%sample==0)
-    {
-      imu_mag_data_read();
-      phl=Phl(xe);
-      theta=Theta(xe);
-      psi=Psi(xe);
-
-
-    }
-
-#endif
 #if 1    
     //姿勢安定化
     //最大角速度 e,a 6π,r 2π
@@ -272,28 +218,8 @@ void MAINLOOP(void)
 }
 int main(void)
 {
-  //float t=0.0;
-  //uint64_t s_time=0,e_time=0,d_time=0;
-  //double phl,theta,psi;
-  //short i,waittime=5;
-  //float p_com[10]={0.1*PI, 0, 0.01*PI, 0, -0.01*PI, 0, 0.02*PI, 0, -0.05*PI, 0};
-  //float q_com[10]={0.1*PI, 0, 0      , 0, -0.01*PI, 0, 0.02*PI, 0, -0.02*PI, 0};
-  //float r_com[10]={0.1*PI, 0,-0.02*PI, 0,      -PI, 0, 0.02*PI, 0,  0.02*PI, 0};
-  //float endtime=10000.0;
-  //float control_period=5.0;
-  //float control_time=5.0;
-  //int counter=0;
-  //int sample=1;
-  //int control_counter=0;
-  //int control_counter_max=0;
-  //double pi=3.14159265358;
-  //float r1=-4.96008102e-6,r2=-4.60371715e-6,r3=-4.17649591e-6;
   float w,f=1;
-  //short y=1;
- //pwm_uart
-  //float seigyo=0.5;  
   const uint LED_PIN = 25;          //LED_PIN=0  
-  float ax,ay,az,wp,wq,wr,mx,my,mz,wqa=0,wpa=0,wra=0,Wqa,Wpa,Wra; 
   gpio_init(LED_PIN);                       //gpioを使えるようにする
   gpio_set_dir(LED_PIN, GPIO_OUT);
   xe << 1.0, 0.0, 0.0, 0.0, -0.078, 0.0016, 0.00063;
@@ -345,45 +271,82 @@ int main(void)
   }
   printf("#Start Kalman Filter\n");
 */
+  wpa=0.0;
+  wqa=0.0;
+  wra=0.0;
 
+  
   while(f<=400){
+    float mx1,my1,mz1;
     imu_mag_data_read();
     wp=    angular_rate_mdps[0]*0.001*0.017453292;
     wq=    angular_rate_mdps[1]*0.001*0.017453292;
     wr=   -angular_rate_mdps[2]*0.001*0.017453292;
+    dmx=  -(magnetic_field_mgauss[0]);
+    dmy=   (magnetic_field_mgauss[1]);
+    dmz=  -(magnetic_field_mgauss[2]);
+
+    //回転行列
+    const float rot[9]={0.65330968, 0.75327755, -0.07589064,
+                       -0.75666134, 0.65302622, -0.03194321,
+                        0.02549647, 0.07829232,  0.99660436};
+    //中心座標
+    const float center[3]={122.37559195017053, 149.0184454603531, -138.99116060635413};
+    //拡大係数
+    const float zoom[3]={0.003077277151877191, 0.0031893151610213463, 0.0033832794976645804};
+
+    //回転・平行移動・拡大
+    mx1 = zoom[0]*( rot[0]*dmx +rot[1]*dmy +rot[2]*dmz -center[0]);
+    my1 = zoom[1]*( rot[3]*dmx +rot[4]*dmy +rot[5]*dmz -center[1]);
+    mz1 = zoom[2]*( rot[6]*dmx +rot[7]*dmy +rot[8]*dmz -center[2]);
+    //逆回転
+    mx = rot[0]*mx1 +rot[3]*my1 +rot[6]*mz1;
+    my = rot[1]*mx1 +rot[4]*my1 +rot[7]*mz1;
+    mz = rot[2]*mx1 +rot[5]*my1 +rot[8]*mz1; 
+    float mag_norm=sqrt(mx*mx +my*my +mz*mz);
+    mx/=mag_norm;
+    my/=mag_norm;
+    mz/=mag_norm;
+    
     wqa=wq+wqa;
     wpa=wp+wpa;
     wra=wr+wra;
+    Mn=Mn+mx;
+    Md=Md+mz;
     f=f+1;
+    sleep_us(2500);
   }
   Wqa=wqa/400;
   Wpa=wpa/400;
   Wra=wra/400;
+  Mn=Mn/400;
+  Md=Md/400;
+
+  printf("%f,%f\n",Mn,Md);
 
   gpio_put(LED_PIN, 1);
   sem_init(&sem, 0, 1);
   multicore_launch_core1(kalman);
-  //printf("finish average\n");
+  
+  
   pwm_settei();
   
-  float oldl=-1.0;
+  float old_time=-1.0;
+  char txbuf[256];
 
   while(1)
   {
-    if(l>oldl)
+    if(kalman_time>old_time)
     {   
-      printf(" %8.2f %9.5f %9.5f %9.5f %9.5f %9.5f %9.5f %9.5f\n",l,xe(0,0),xe(1,0),xe(2,0),xe(3,0),xe(4,0),xe(5,0),xe(6,0));
-      oldl=l;
-    }   // s_time=time_us_64();
+      sprintf(txbuf,"%8.2f %9.5f %9.5f %9.5f %9.5f %9.5f %9.5f %9.5f "
+             "%9.5f %9.5f %9.5f %9.5f %9.5f %9.5f %9.5f %9.5f %9.5f\n",
+             kalman_time,xe(0,0),xe(1,0),xe(2,0),xe(3,0),xe(4,0),xe(5,0),xe(6,0),
+             wp,wq,wr,ax,ay,az,mx,my,mz);
+      printf("%s",txbuf);
+      //printf("%8.2f %9.5f %9.5f %9.5f\n",kalman_time,dmx,dmy,dmz);
+      old_time=kalman_time;
+    }
   }
-    //sleep_ms(10);
-    //Control
- /*   if(t>control_time)
-    {
-      control_time = control_time + control_period;
-      control_counter++;
-      if(control_counter>control_counter_max)control_counter=0;
-    }*/
     //gpio_put(LED_PIN, 1);
  
 }
